@@ -1,0 +1,110 @@
+plugins {
+    id 'com.android.application'
+}
+
+def sdlVersion   = '2.32.8'
+def mixerVersion = '2.8.1'
+def netVersion   = '2.2.0'
+
+android {
+    namespace 'com.cookie.doom'
+    compileSdk 36
+    ndkVersion '29.0.14033849'
+
+    defaultConfig {
+        applicationId 'com.cookie.doom'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_PLATFORM=android-26',
+                          '-DANDROID_STL=c++_shared',
+                          '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                cFlags '-O2', '-fno-strict-aliasing', '-Wno-error'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.31.6'
+        }
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+dependencies {
+    implementation libs.androidx.core
+    implementation libs.androidx.appcompat
+    implementation libs.material
+    implementation libs.androidx.constraintlayout
+}
+
+def depsDir = file('src/main/cpp/deps')
+
+def fetchArchive = { String url, File target ->
+    if (new File(target, 'CMakeLists.txt').exists()) return
+    println "Downloading ${url}"
+    def tmp = File.createTempFile('cookiedoom-dep', '.tar.gz')
+    new URL(url).withInputStream { input -> tmp.withOutputStream { out -> out << input } }
+    target.mkdirs()
+    copy {
+        from tarTree(resources.gzip(tmp))
+        into target
+        includeEmptyDirs = false
+        eachFile { d ->
+            d.relativePath = new RelativePath(!d.directory, d.relativePath.segments.drop(1) as String[])
+        }
+    }
+    tmp.delete()
+}
+
+tasks.register('fetchDeps') {
+    group = 'cookiedoom'
+    description = 'Downloads SDL2, SDL2_mixer and SDL2_net and copies SDL\'s Java classes.'
+    doLast {
+        fetchArchive("https://github.com/libsdl-org/SDL/releases/download/release-${sdlVersion}/SDL2-${sdlVersion}.tar.gz",
+                     new File(depsDir, 'SDL2'))
+        fetchArchive("https://github.com/libsdl-org/SDL_mixer/releases/download/release-${mixerVersion}/SDL2_mixer-${mixerVersion}.tar.gz",
+                     new File(depsDir, 'SDL2_mixer'))
+        fetchArchive("https://github.com/libsdl-org/SDL_net/releases/download/release-${netVersion}/SDL2_net-${netVersion}.tar.gz",
+                     new File(depsDir, 'SDL2_net'))
+        copy {
+            from new File(depsDir, 'SDL2/android-project/app/src/main/java/org/libsdl/app')
+            into file('src/main/java/org/libsdl/app')
+        }
+    }
+}
+
+preBuild.dependsOn 'fetchDeps'
+tasks.matching { it.name.startsWith('configureCMake') || it.name.startsWith('buildCMake') }
+     .configureEach { dependsOn 'fetchDeps' }

@@ -1,0 +1,31 @@
+# Gradle / Android Studio
+.gradle/
+build/
+app/build/
+.cxx/
+.idea/
+.acside/
+*.iml
+local.properties
+captures/
+
+# Signing and build output
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Downloaded by `./gradlew fetchDeps` (SDL2, SDL2_mixer, SDL2_net and SDL's Java classes)
+app/src/main/cpp/deps/
+app/src/main/java/org/libsdl/
+
+# Game data is not part of this project
+*.wad
+*.WAD
+*.pk3
+*.deh
+*.bex
+
+# OS junk
+.DS_Store
+Thumbs.db

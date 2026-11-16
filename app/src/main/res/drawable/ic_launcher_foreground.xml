@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cookie logo, scaled to sit inside the adaptive-icon safe zone (66dp of 108dp). -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_cookie"
+    android:insetLeft="19%"
+    android:insetTop="19%"
+    android:insetRight="19%"
+    android:insetBottom="19%" />
